@@ -44,7 +44,11 @@ class TestEventProcessor extends Actor with LazyLogging {
         }
 
         writer.append("\n--------------------------------------------------------------")
-        System.exit(0)
+
+        // To test Graceful shutdown by hook.
+//        System.exit(0)
+
+        // To test Graceful shutdown by not acking.
 //        context.become(notAckableReceive())
       }
   }
@@ -64,4 +68,9 @@ object Consumer extends App {
   implicit val executor = system.dispatcher
   val consumer = KinesisConsumer(ConsumerConf(config.getConfig("kinesis"), "my-consumer"), eventProcessor, system)
   consumer.start()
+
+
+
+  // To test Graceful shutdown by hook.
+
 }
