@@ -1,4 +1,5 @@
 import java.io.{File, FileOutputStream, PrintWriter}
+import java.util.concurrent.CountDownLatch
 
 import akka.actor.{Actor, Props}
 import com.typesafe.config.ConfigFactory
@@ -9,12 +10,13 @@ import com.weightwatchers.core.eventing.consumer.KinesisConsumer.ConsumerConf
 import com.weightwatchers.core.eventing.models.{CompoundSequenceNumber, ConsumerEvent}
 
 import scala.collection.mutable
+import scala.concurrent.Future
 
 /**
   * Created by david.de on 2/17/17.
   */
 
-class TestEventProcessor extends Actor with LazyLogging {
+class TestEventProcessor(shutdownLatch: CountDownLatch) extends Actor with LazyLogging {
   import scala.concurrent.duration._
 
   implicit val timeout = akka.util.Timeout(5 minutes)
@@ -46,7 +48,7 @@ class TestEventProcessor extends Actor with LazyLogging {
         writer.append("\n--------------------------------------------------------------")
 
         // To test Graceful shutdown by hook.
-//        System.exit(0)
+        shutdownLatch.countDown()
 
         // To test Graceful shutdown by not acking.
 //        context.become(notAckableReceive())
@@ -64,13 +66,17 @@ object Consumer extends App {
 
   val system = akka.actor.ActorSystem.create("test-system")
   val config = ConfigFactory.load()
-  val eventProcessor = system.actorOf(Props[TestEventProcessor], "test-processor")
+  val shutdown = new CountDownLatch(1)
+  val eventProcessor = system.actorOf(Props(new TestEventProcessor(shutdown)), "test-processor")
   implicit val executor = system.dispatcher
   val consumer = KinesisConsumer(ConsumerConf(config.getConfig("kinesis"), "my-consumer"), eventProcessor, system)
-  consumer.start()
 
+  Future {
+    consumer.start()
+  }
 
 
   // To test Graceful shutdown by hook.
-
+  shutdown.await()
+  System.exit(0)
 }
