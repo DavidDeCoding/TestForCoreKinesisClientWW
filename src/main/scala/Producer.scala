@@ -25,7 +25,7 @@ object Producer extends App {
 
   var fProducerEvents: ListBuffer[Future[UserRecordResult]] = new ListBuffer[Future[UserRecordResult]]()
 
-  for(i <- 1 to 1000) {
+  for(i <- 1 to 2) {
 
     val producerEvent = ProducerEvent(UUID.randomUUID.toString, String.valueOf(counter))
 

@@ -36,7 +36,7 @@ class TestEventProcessor(shutdownLatch: CountDownLatch) extends Actor with LazyL
     case ProcessEvent(event) =>
       pq += event.sequenceNumber
 
-      if (pq.size == 100) {
+      if (pq.size == 1) {
 
         while (pq.nonEmpty) {
           val currentSequenceNumber = pq.dequeue
@@ -46,12 +46,15 @@ class TestEventProcessor(shutdownLatch: CountDownLatch) extends Actor with LazyL
         }
 
         writer.append("\n--------------------------------------------------------------")
+        writer.flush()
+
+        // To test Graceful shutdown by not acking.
+        context.become(notAckableReceive())
 
         // To test Graceful shutdown by hook.
         shutdownLatch.countDown()
 
-        // To test Graceful shutdown by not acking.
-//        context.become(notAckableReceive())
+
       }
   }
 
